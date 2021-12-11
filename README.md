@@ -14,7 +14,7 @@ chmod 755 compile.sh
 
 ## Simulation study 
 
-1. Please first enter the [simulation](#simulation) directory
+1. Please first enter the simulation directory
 
 ```
 cd ../simulation/
@@ -48,7 +48,7 @@ where
 *-n: the hyperparameter a for the Dirichlet parameters,
 *-o: the number of extra iterations to sample for calculating the DIC.
 
-The posterior inference of parameters can be found in the folder [Inference](#Inference).  The file is named `Inference_simulation_SMMB_K3_v1_r1.RData` to present its corresponding project, its number of roles, its version number and its replication number. 
+The posterior inference of parameters can be found in the folder Inference.  The file is named `Inference_simulation_SMMB_K3_v1_r1.RData` to present its corresponding project, its number of roles, its version number and its replication number. 
 
 4. To select the number of roles, we vary the number of roles from 1 to 5 to compare their corresponding DIC values by running
 
@@ -96,7 +96,7 @@ We would like to compare the performance of the SMMB with that of two alternativ
 R --vanilla --slave < MCMC_pairwiseSCRM.R
 ```
 
-The posterior sampling will be stored in the folder [Inference](#Inference) as `Inference_simulation_pairwiseSCRM_pairX.RData` for `X`-th user pair.
+The posterior sampling will be stored in the folder Inference as `Inference_simulation_pairwiseSCRM_pairX.RData` for `X`-th user pair.
 
 2. To generate data replicate from the posterior predictive distribution and calculate the L measure, we run
 
