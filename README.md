@@ -26,7 +26,7 @@ cd ../simulation/
 R --vanilla --slave < simulate_SMMB.R
 ```
 
-It will generate a 150-actor network with time-to-event data between pairs of users. The observed data, including survival times, censoring indicators and covariates, will be stored as the "Dat" variable in the workspace "ObsData/Obs_SMMSB_v1.RData", while the whole workspace with the true values of parameters will be saved in the workspace `ObsData/workspace_SMMSB_v1.RData` to verify the inference results. The adjacent matrix of the synthetic network is drawn as `Images/Adjacent_matrix_grey_v1.jpg` as Figure 1(b) in the main text.
+It will generate a 150-actor network with time-to-event data between pairs of users. The observed data, including survival times, censoring indicators and covariates, will be stored as the `Dat` variable in the workspace `ObsData/Obs_SMMSB_v1.RData`, while the whole workspace with the true values of parameters will be saved in the workspace `ObsData/workspace_SMMSB_v1.RData` to verify the inference results. The adjacent matrix of the synthetic network is drawn as `Images/Adjacent_matrix_grey_v1.jpg` as Figure 1(b) in the main text.
 
 3. To reproduce the statistical inference in our manuscript, please run
 
@@ -35,18 +35,18 @@ Rscript ../src_MCMC/MCMC_source.R -p simulation -v 1 -K 3 -r 1 -s 5994 -i 50000 
 ```
 where 
 
-*-p: the project name, 
-*-v: the version,
-*-K: the number of roles,
-*-r: the replication,
-*-s: the seed for MCMC algorithm,
-*-i: the iteration number of MCMC algorithm,
-*-b: the number of iterations as burnins,
-*-c: the number of cores for parallel computing
-*-l: the hyperparameter kappa for the piecewise constant hazards,
-*-m: the hyperparameter sigma^2 for the coefficients of covariates,
-*-n: the hyperparameter a for the Dirichlet parameters,
-*-o: the number of extra iterations to sample for calculating the DIC.
+* -p: the project name, 
+* -v: the version,
+* -K: the number of roles,
+* -r: the replication,
+* -s: the seed for MCMC algorithm,
+* -i: the iteration number of MCMC algorithm,
+* -b: the number of iterations as burnins,
+* -c: the number of cores for parallel computing
+* -l: the hyperparameter kappa for the piecewise constant hazards,
+* -m: the hyperparameter sigma^2 for the coefficients of covariates,
+* -n: the hyperparameter a for the Dirichlet parameters,
+* -o: the number of extra iterations to sample for calculating the DIC.
 
 The posterior inference of parameters can be found in the folder Inference.  The file is named `Inference_simulation_SMMB_K3_v1_r1.RData` to present its corresponding project, its number of roles, its version number and its replication number. 
 
@@ -65,7 +65,7 @@ We suggest to run the command for each role number in parallel.
 R --vanilla --slave < simulation_analysis.R
 ```
 
-First, DIC can correctly select the optimal role number as the true value K = 3 in the manuscript. Then, we compare the estimated parameter values with the true values. To compare the estimation of the role pair for each actor pair, we generate the contingency table between the estimated role pairs and their true values as Table 2. Next, we compare the estimated baseline survival probabilities at each knot with the true values to show that our proposed model can correctly recover the piecewise constant hazards and the intercept terms as Figure 2. Besides, we list the true values, the posterior mean and variance, and the 95% credible intervals of all coefficients in Table 1.
+First, DIC can correctly select the optimal role number as the true value `K = 3` in the manuscript. Then, we compare the estimated parameter values with the true values. To compare the estimation of the role pair for each actor pair, we generate the contingency table between the estimated role pairs and their true values as Table 2. Next, we compare the estimated baseline survival probabilities at each knot with the true values to show that our proposed model can correctly recover the piecewise constant hazards and the intercept terms as Figure 2. Besides, we list the true values, the posterior mean and variance, and the 95% credible intervals of all coefficients in Table 1.
 
 
 ## Sensitivity analysis 
@@ -88,7 +88,7 @@ It will list the ARIs under different settings shown in Tables 3 and 4.
 
 ## Model comparison 
 
-We would like to compare the performance of the SMMB with that of two alternative strategies. The first strategy is to fit a unique semiparametric cure rate model (SCRM) for all the survival times, called an overall SCRM. If the number of roles K is set as one, then the SMMB degenerate to an overall SCRM. Thus, we can directly infer the piesewise constant hazards and the coefficients for the covariates by setting K=1 in our proposed MCMC algorithm. The second strategy is to fit a separate SCRM for the survival times between each pair of users, which is termed as pairwise SCRMs. To infer the pair-specific hazards and coefficients for each pair, we apply an MCMC algorithm for each pair separately. Finally, to calibrate the performance of different models, we take the L measure of the posterior predictive distribution as the criterion.
+We would like to compare the performance of the SMMB with that of two alternative strategies. The first strategy is to fit a unique semiparametric cure rate model (SCRM) for all the survival times, called an overall SCRM. If the number of roles `K` is set as one, then the SMMB degenerate to an overall SCRM. Thus, we can directly infer the piesewise constant hazards and the coefficients for the covariates by setting `K=1` in our proposed MCMC algorithm. The second strategy is to fit a separate SCRM for the survival times between each pair of users, which is termed as pairwise SCRMs. To infer the pair-specific hazards and coefficients for each pair, we apply an MCMC algorithm for each pair separately. Finally, to calibrate the performance of different models, we take the L measure of the posterior predictive distribution as the criterion.
 
 1. To obtain the posterior sampling of pairwise SCRMs, we run the MCMC algorithm by
 
@@ -124,7 +124,7 @@ cd ../enron/
 R --vanilla --slave < preprocessing.R
 ```
 
-As a result, the observed data are stored as a matrix called `sur_collect` in the workspace `Reponse_time_collection.RData`, including censoring indicators nu, survival outcomes y and covariate matrix X. At the same time, we also generate the binary adjacent matrix stored in `adj_enron_communications.txt` for applying MMSB. 
+As a result, the observed data are stored as a matrix called `sur_collect` in the workspace `Reponse_time_collection.RData`, including censoring indicators nu, survival outcomes y and covariate matrix `X`. At the same time, we also generate the binary adjacent matrix stored in `adj_enron_communications.txt` for applying MMSB. 
 
 3. To summarize the Enron dataset, please run
 
@@ -142,7 +142,7 @@ Rscript ../src_MCMC/MCMC_source.R -p enron -v 1 -K 2 -r 1 -s 9822 -k 5 -i 100000
 
 where 
 	
-*-k: the number of knots.
+* -k: the number of knots.
 
 Here, we run totally 100,000 iterations and regard the first 50,000 as burnins in the MCMC algorithm.
 
