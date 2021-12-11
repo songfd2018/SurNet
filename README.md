@@ -1,17 +1,18 @@
-We propose a Bayesian hierarchical model---Survival Mixed Membership Blockmodel (SMMB) to predict and infer the response behaviors for any given pair of actors. Here are the steps about how to reproduce all the results in our manuscript.
+# SurNet: Survival Mixed Membership Blockmodel
 
-###########################
-# Compile C++ source code #
-###########################
+We propose a Bayesian hierarchical model---Survival Mixed Membership Blockmodel (SMMB) to predict and infer the response behaviors for any given pair of actors. You can reproduce our results step by step as follows.
+
+## Compile C++ source code 
+
 First of all, please compile C++ source code for the MCMC algorithm by running
 
 cd src_MCMC
 chmod 755 compile.sh
 ./compile.sh
 
-####################
-# Simulation study #
-####################
+
+## Simulation study 
+
 1. Please first enter the "simulation" directory
 
 cd ../simulation/
@@ -56,9 +57,9 @@ R --vanilla --slave < simulation_analysis.R
 
 First, DIC can correctly select the optimal role number as the true value K = 3 in the manuscript. Then, we compare the estimated parameter values with the true values. To compare the estimation of the role pair for each actor pair, we generate the contingency table between the estimated role pairs and their true values as Table 2. Next, we compare the estimated baseline survival probabilities at each knot with the true values to show that our proposed model can correctly recover the piecewise constant hazards and the intercept terms as Figure 2. Besides, we list the true values, the posterior mean and variance, and the 95% credible intervals of all coefficients in Table 1.
 
-########################
-# Sensitivity analysis #
-########################
+
+## Sensitivity analysis 
+
 We conduct sensitivity analysis to check whether our inference is robust to the selection of hyparameters or knots. 
 1. To conduct the posterior inference for each case, please run
 
@@ -71,9 +72,8 @@ R --vanilla --slave < sensitivity_analysis.R
 
 It will list the ARIs under different settings shown in Tables 3 and 4.
 
-####################
-# Model comparison #
-####################
+## Model comparison 
+
 We would like to compare the performance of the SMMB with that of two alternative strategies. The first strategy is to fit a unique semiparametric cure rate model (SCRM) for all the survival times, called an overall SCRM. If the number of roles K is set as one, then the SMMB degenerate to an overall SCRM. Thus, we can directly infer the piesewise constant hazards and the coefficients for the covariates by setting K=1 in our proposed MCMC algorithm. The second strategy is to fit a separate SCRM for the survival times between each pair of users, which is termed as pairwise SCRMs. To infer the pair-specific hazards and coefficients for each pair, we apply an MCMC algorithm for each pair separately. Finally, to calibrate the performance of different models, we take the L measure of the posterior predictive distribution as the criterion.
 
 1. To obtain the posterior sampling of pairwise SCRMs, we run the MCMC algorithm by
@@ -88,9 +88,9 @@ R --vanilla --slave < PPC_Lmeasure.R
 
 We collect the L measure of three models as "Lmeasure_Collect" varaible, which is saved in "PPC_results/Lmeasure_PPC.RData".
 
-######################
-# Enron email corpus #
-######################
+
+## Enron email corpus 
+
 
 The Enron corpus is the largest publicly available email dataset to date and was released by the Federal Energy Regulatory Commission during its investigation of Enron's bankruptcy. It contains the user information and the timestamps of each email. Following [the enrondata GitHub repository](https://github.com/enrondata/enrondata/blob/master/data/misc/edo\_enron-custodians.txt), we focus on the email folders of 148 Enron users whose positions in the company are available. 
 
