@@ -74,7 +74,6 @@ We conduct sensitivity analysis to check whether our inference is robust to the 
 1. To conduct the posterior inference for each case, please run
 
 ```
-chmod 755 sensitivity_analysis.sh
 ./sensitivity_analysis.sh
 ```
 
@@ -109,54 +108,39 @@ We collect the L measure of three models as "Lmeasure_Collect" varaible, which i
 
 ## Enron email corpus 
 
+The Enron corpus is the largest publicly available email dataset to date and was released by the Federal Energy Regulatory Commission during its investigation of Enron's bankruptcy. It contains the user information and the time stamps of each email. Following [the enrondata GitHub repository](https://github.com/enrondata/enrondata/blob/master/data/misc/edo\_enron-custodians.txt), we focus on the email folders of 148 Enron users whose positions in the company are available. You can download the pulicly available email corpus from [the website](https://www.cs.cmu.edu/~./enron/). You can reproduce the figures in the manuscript by the following steps.
 
-The Enron corpus is the largest publicly available email dataset to date and was released by the Federal Energy Regulatory Commission during its investigation of Enron's bankruptcy. It contains the user information and the timestamps of each email. Following [the enrondata GitHub repository](https://github.com/enrondata/enrondata/blob/master/data/misc/edo\_enron-custodians.txt), we focus on the email folders of 148 Enron users whose positions in the company are available. 
 
-1. Please first enter the "enron" directory
-
-```
-cd ../enron/
-```
-
-2. To extract the response or censoring time of email interactions among 148 users, please conduct the preprocessing by running
+1. (Optional) To extract the response or censoring time of email interactions among 148 users, please conduct the preprocessing by running
 
 ```
-R --vanilla --slave < preprocessing.R
+R --vanilla --slave < EnronPreprocessing.R
 ```
 
-As a result, the observed data are stored as a matrix called `sur_collect` in the workspace `Reponse_time_collection.RData`, including censoring indicators nu, survival outcomes y and covariate matrix `X`. At the same time, we also generate the binary adjacent matrix stored in `adj_enron_communications.txt` for applying MMSB. 
+As a result, the observed data are stored as `Data/Reponse_time_collection.RData` for the analysis without confidential information, including censoring indicators `nu`, survival outcomes `y` and covariate matrix `X`. At the same time, the data frame for the analysis with confidential information and the data frame considering sending behaviors are stored as `Data/Respons_confidential.RData` and `Data/Response_time.RData`, respectively. This step is time-consuming, so we also attach these workspaces in the supplementary materials.
 
-3. To summarize the Enron dataset, please run
+Morevoer, we also generate the binary adjacent matrix stored in `adj_enron_communications.txt` for applying MMSB.
 
-```
-R --vanilla --slave < summarize_enron.R
-```
-
-We first provide the summary statistics shown in Table 5. Then, we draw the heatmap of the adjacent matrix as Figure 1(a).
-
-4. To conduct statistical inference, please run
+2. Run the MCMC algorithm for the above three circumstances by running 
 
 ```
-Rscript ../src_MCMC/MCMC_source.R -p enron -v 1 -K 2 -r 1 -s 9822 -k 5 -i 100000 -b 50000 -c 1 -l 50 -m 5 -n 1 -o 10
+./EnronMCMC.sh
 ```
 
-where 
-	
-* -k: the number of knots.
-
-Here, we run totally 100,000 iterations and regard the first 50,000 as burnins in the MCMC algorithm.
-
-5. To select the number of roles, we also vary the number of roles from 1 to 5 to compare their corresponding DIC values by running
+3. To determine the number of roles, we also vary the number of roles from 1 to 5 to compare their corresponding DIC values by running
 
 ```
-chmod 755 select_role_number.sh
-./select_role_number.sh
+./EnronSelection.sh
+```
+The posterior inference of parameters can be found in the `Inference` folder. `v1` stands for analyzing without confidential information, `v2` represents the analysis with confidiential information, and `v3` indicates to consider sending behaviors. 
+
+
+4. Finally, to reproduce all figures and tables in the real data analysis, including the scatter plot and boxplot of role proportions, the baseline survival functions, and output the coefficient effects, please run
+
+```
+R --vanilla --slave < EnronAnalysis.R
 ```
 
-6. To reproduce all figures and tables in the real data analysis, please run
+For the analysis without confidiential information, the R code draws the scatter plots of the actor-specific role proportions and the line charts of the baseline survival functions for all role pairs in Figure 3. It then gives the estimated role proportions of four CEOs in Table 2 by Mixed Membership Stochastics Blockmodel (MMSB) and SMMB, respectively. Finally, it outputs the posterior mean, the posterior SD and the 95% credible interval of coefficients in Table 3.
 
-```
-R --vanilla --slave < real_data_analysis.R
-```
-
-The code draws the scatter plots of the actor-specific role proportions as Figure 3 and the line charts of the baseline survival functions for all role pairs as Figure 4. It then gives the estimated role proportions of four CEOs in Table 3 by Mixed Membership Stochastics Blockmodel (MMSB) and SMMB, respectively. Finally, it outputs the posterior mean, the posterior SD and the 95% credible interval of coefficients as Table 4. 
+Meanwhile, the R code will reproduce the corresponding scatter plots, line charts and coefficient estimation for another two circumstances, that is, analysis with confidential information and considering sending behaviors.
