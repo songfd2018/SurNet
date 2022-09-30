@@ -10,7 +10,7 @@ spec = matrix(c(
   'replication'   , 'r', 1, "integer",
   'num_membership'     , 'K', 1, "integer",
   'seed' , 's', 1, "integer",
-  'num_knot', 'k', 2, "integer",
+  'num_knot', 'M', 2, "integer",
   'num_iteration', 'i', 2, "integer",
   'num_burnin', 'b', 2, "integer",
   'num_core', 'c', 2, "integer",
@@ -141,7 +141,9 @@ if(proj == "simulation"){
   diff.knots<-diff(c(0,knots))
   knots0 <- c(0,knots)
   
-}else if(proj == "simknots"){
+}
+
+if(proj == "simknots"){
 
   ver.output<-paste0("K",K,"_",proj,"_v",v,"_r",r)
   
@@ -172,12 +174,14 @@ if(proj == "simulation"){
   diff.knots<-diff(c(0,knots))
   knots0 <- c(0,knots)
   
-}else if(proj == "enron"){
+}
+  
+if(proj == "enron"){
 
   ver.output<-paste0("K",K,"_",proj,"_v",v,"_r",r)
   
   #read observed data
-  load("Reponse_time_collection.RData")
+  load("Data/Reponse_time_collection.RData")
   tol_rep <- nrow(sur_collect)
   p.cov <- ncol(sur_collect) - 6
   usr_no_list <- as.numeric(names(table(sur_collect[,1:2])))

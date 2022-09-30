@@ -625,7 +625,6 @@ headerParsed<- parseHeader(headers)
 ########################################
 #sort by time and exclude repeat emails#
 ########################################
-
 datesTest<-as.POSIXlt(headerParsed$datesTest)
 #select time window 99-02
 datesTest$year<-(datesTest$year+10)%%100+90
@@ -837,10 +836,11 @@ colnames(interest_record) <- c("EventIndex","FolderName","SenderID","SenderName"
                                "LocalTime","NumReciever","Subject","Category",
                                "LastWordNum","OriginalWordNum","Content")
 
+# save.image("Workspace_interested_events_v6.RData")
+
 ##############################################################################################
 # Obtain the adjacent matrix from interest_record and output the email content for each pair #
 ##############################################################################################
-
 pairs_in_events <- paste0(interest_record[,3],"-",interest_record[,4])
 
 factor_sender <- factor(interest_record[,3],levels = 1:n.usr)
@@ -874,12 +874,8 @@ for(evt in 1:n.interestevents){#n.interestevents){
 # Working on each pair of nodes to remove redundent emails #
 ############################################################
 dir_interest<-"interested_events/"
-if(!dir.exists(dir_interest)){
-  dir.create(dir_interest)
-}
-
 setwd(dir_interest)
-name.file<-list.files(dir_interest) 
+name.file<-list.files() 
 n.file<-length(name.file)
 NameNoExtension <- sub(".txt","",name.file)
 adj_matrix<- matrix("false",n.usr,n.usr)
@@ -888,9 +884,17 @@ adj_matrix<- matrix("false",n.usr,n.usr)
 # Collect the response or censoring time and covariates #
 #########################################################
 sur_collect <- NULL
+Cov_gender <- NULL
+Cov_recent <- NULL
+email_content <- NULL
 
 # The threshold to regard an email as unreplied
 thres_day <- 21
+
+# The threshold to regard an email as recent email
+recent_day <- 7
+
+employeelist <- read.csv("../RawData/employeelist.csv")
 
 # sr_time <- NULL
 # pair_info<- NULL
@@ -914,7 +918,7 @@ for(fl in 1:n.file){
     unique.events[which(is.na(unique.events[,13])),13] <- ""
     
     
-    # some repeated emails have contents only dfferent in the number of blanks
+    # some repeated emails have contents only different in the number of blanks
     content_no_blank <- gsub(" ","",unique.events[,13])
     
     
@@ -994,9 +998,32 @@ for(fl in 1:n.file){
     }
     
     if(length(emails_except_2last) > 0){
-      sur_out <- matrix(0, length(emails_except_2last), 10)
-      k1 <- 0
-      k2 <- 0
+      n_eml <- length(emails_except_2last)
+      sur_out <- matrix(0, n_eml, 10)
+      colnames(sur_out) <- c("i","j","k","nu",
+                             "X0","Weekend","Foward","LogNumReceiver","LogNumWordsPlus1OriginalEmail",
+                             "Y")
+      
+      recent_out <- rep(0, n_eml)
+      gender_out <- matrix(0, n_eml, 3)
+      
+      # Columns of the sur_out matrix include
+      # 1. sender
+      # 2. receiver
+      # 3. index of email between the given pair
+      # 4. censoring indicator
+      # 5. intercept term
+      # 6. Weekend email or not 
+      # 7. An forwarded email 
+      # 8. Number of receiver
+      # 9. length of email
+      # 10. Response or censoring time
+      
+      # Cov_recent: Whether receiving an email from the receiver in one week
+      # Cov_gender: Male sending to Female, Female sending to Male, Female sending to Female
+      # email_content: collect the contents of emails to extract content covariates 
+      
+      contents <- unique.events[emails_except_2last,15]
       
       #covariate matrix
       sur_out[,5] <- 1
@@ -1005,19 +1032,46 @@ for(fl in 1:n.file){
       sur_out[,8] <- log(as.numeric(unique.events[emails_except_2last,10]))
       sur_out[,9] <- log1p(as.numeric(unique.events[emails_except_2last,14]))
       
-      colnames(sur_out) <- c("i","j","k","nu","X0","Weekend","Foward","LogNumReceiver","LogNumWordsPlus1OriginalEmail","Y")
       
       index <- 1
+      k1 <- 1
+      k2 <- 1
       for(eml in emails_except_2last){
         sender <- as.numeric(unique.events[eml,3])
         receiver <- as.numeric(unique.events[eml,5])
         sur_out[index,1:2] <- c(sender,receiver)
         if(sender > receiver){
-          k1 <- k1 + 1
           sur_out[index,3] <- k1
+          k1 <- k1 + 1
         }else{
-          k2 <- k2 + 1
           sur_out[index,3] <- k2
+          k2 <- k2 + 1
+        }
+        
+        # sending behavior
+        if(eml > 1){
+          
+          prev_email <- which(unique.events[1:(eml - 1),3] == receiver & unique.events[1:(eml - 1),5] == sender)
+          if(length(prev_email) > 0){
+            
+            last_email <- prev_email[length(prev_email)]
+            if(difftime(unique.events[eml,8], unique.events[last_email,8],units = "days") < recent_day){
+              recent_out[index] <- 1
+            }
+          }
+        }
+        
+        # gender
+        gender_sender <- employeelist$gender[employeelist$eid==sender]
+        receiver_sender <- employeelist$gender[employeelist$eid==receiver]
+        if(gender_sender == "M" & receiver_sender == "M"){
+          gender_out[index,] <- 0
+        }else if(gender_sender == "M" & receiver_sender == "F"){
+          gender_out[index,] <- c(1,0,0)
+        }else if(gender_sender == "F" & receiver_sender == "M"){
+          gender_out[index,] <- c(0,1,0)
+        }else{
+          gender_out[index,] <- c(0,0,1)
         }
         
         # if it is a replied email, return a reply time. Or, return a censoring time as 21 days
@@ -1025,28 +1079,108 @@ for(fl in 1:n.file){
           reply_eml <- replied_ind[eml]
           sur_out[index,4] <- 1
           sur_out[index,10] <- difftime(unique.events[reply_eml,8], unique.events[eml,8], units = "hours")
+          
         }else if(length(which(sub_no_prefix[(eml + 1):num_eml] == sub_no_prefix[eml])) > 0){
           sur_out[index,4] <- 0
           recent_eml <- min(which(sub_no_prefix[(eml + 1):num_eml] == sub_no_prefix[eml]))
           sur_out[index,10] <- min(thres_day * 24, difftime(unique.events[eml + recent_eml,8], unique.events[eml,8], units = "hours"))
+          
         }else{
           sur_out[index,4] <- 0
           sur_out[index,10] <- thres_day * 24
+          
         }
         
         index <- index + 1
       }
-      fil_name <- paste0(NameNoExtension[fl],"_replytime.txt")
+      
+      email_content <- c(email_content, contents)
       sur_collect <- rbind(sur_collect, sur_out)
-      write.csv(sur_out, file = fil_name, row.names = FALSE)
+      Cov_gender <- rbind(Cov_gender, gender_out)
+      Cov_recent <- c(Cov_recent, recent_out)
+      
+      #fil_name <- paste0(NameNoExtension[fl],"_replytime.txt")
+      #write.csv(sur_out, file = fil_name, row.names = FALSE)
     }
     # save the unique events into file
-    fil_name <- paste0(NameNoExtension[fl],"_unique.txt")
-    write.table(unique.events, file = fil_name, row.names = FALSE, sep = ",")
+    # fil_name <- paste0(NameNoExtension[fl],"_unique.txt")
+    # write.table(unique.events, file = fil_name, row.names = FALSE, sep = ",")
   }
   message(paste0("Finish the pair ",NameNoExtension[fl]))
 }
 
+######################
+# Sentiment analysis #
+######################
+library(topicmodels)
+library(dplyr)
+library(tidyr)
+library(tidytext)
+library(ggplot2)
+
+# convert the vector of content as a data frame
+content_df <- tibble(line = 1:length(email_content), text = email_content)
+
+# transform the data frame to one-token-per-document-per-row structure, 
+# called tidy data structure
+tidy_content <- content_df %>% unnest_tokens(word, text)
+
+# Often in text analysis, we will want to remove stop words; 
+# stop words are words that are not useful for an analysis, 
+# typically extremely common words such as, 
+# and so forth in English. We can remove stop words 
+# (kept in the tidytext dataset stop_words) with an anti_join().
+data(stop_words)
+tidy_content <- tidy_content %>%
+  anti_join(stop_words)
+
+# sentiment analysis using loughran Dictionary
+email_sentiment <- tidy_content %>%
+  inner_join(get_sentiments("loughran")) %>%
+  count(line, sentiment) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = list(n = 0))
+
+Cov_loughran <- matrix(0, nrow(sur_collect), 6)
+num_valid <- nrow(email_sentiment)
+for(i in 1:num_valid){
+  cur_row <- email_sentiment[i,]
+  cur_row <- unlist(cur_row)
+  Cov_loughran[cur_row[1],] <- cur_row[2:7] 
+}
+Cov_loughran <- log1p(Cov_loughran)
+
+# Most common words in each category
+loughran_word_counts <- tidy_content %>%
+  inner_join(get_sentiments("loughran")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+top10_words <- loughran_word_counts %>% 
+  group_by(sentiment) %>% slice(1:10)
+
+top10_out <- cbind(top10_words[1:10,c(1,3)],top10_words[1:10 +10,c(1,3)],
+                   top10_words[1:10 + 20,c(1,3)],top10_words[1:10 + 30,c(1,3)],
+                   top10_words[1:10 + 40,c(1,3)],top10_words[1:10 + 50,c(1,3)])
+xtable(top10_out)
+
+sur_outcome <- cbind(sur_collect[,1:9], Cov_loughran, Cov_gender, Cov_recent, sur_collect[,10])
+
+setwd("../")
+# Analysis without confidential information
+save(sur_collect, file = "Data/Reponse_time_collection.Rdata")
+
+# Analysis with confidential information
+sur_content <- sur_outcome[,c(1:18,20)]
+save(sur_content, file = "Data/Respons_confidential.RData")
+
+# Analysis considering sending behavior
+sur_time <- sur_outcome[,c(1:9,19:20)]
+save(sur_time, file = "Data/Response_time.RData")
+
+#########################
+# summarize the dataset #
+#########################
+library(survival)
 # sort reply emails by the user order and include pairs without failure time
 tol_rep <- nrow(sur_collect)
 p.cov <- ncol(sur_collect) - 6
@@ -1059,7 +1193,15 @@ Dat <- sur_collect
 ord_rep <- order(Dat[,1],Dat[,2])
 Dat <- Dat[ord_rep,]
 
-# exclude user who do not reply any email and are not replied by others
+num.pair<-NULL# record the sender, receiver and num of reply 
+for (i in 2:tol_rep){
+  if((Dat[i,1]!=Dat[i-1,1])||(Dat[i,2]!=Dat[i-1,2])){
+    num.pair<-rbind(num.pair,Dat[i-1,1:3])
+  }
+}
+num.pair<-rbind(num.pair,Dat[tol_rep,1:3])
+tol_pair<-nrow(num.pair)
+
 num.pair <- cbind(num.pair, 0)
 index_rep <- 0
 for(i in 1:tol_pair){
@@ -1068,19 +1210,37 @@ for(i in 1:tol_pair){
   index_rep <- index_rep + nij
 }
 
-num_fail_usr <- rep(0,max(usr_no_list))
-for(s in usr_no_list){
-  send_pair <- which(num.pair[,1] == s)
-  num_fail_usr[s] <- num_fail_usr[s] + sum(num.pair[send_pair,4])
 
-  rece_pair <- which(num.pair[,2] == s)
-  num_fail_usr[s] <- num_fail_usr[s] + sum(num.pair[rece_pair,4])
-}
+# # KM curve and Median survival time
+# nu <- Dat[,4]
+# X <- Dat[,5:(5+p.cov)]
+# Y <- Dat[,ncol(Dat)]
+# 
+# Survival_fit <- survfit(Surv(Y,nu) ~ 1)
+# 
+# plot(Survival_fit, ylim = c(0.9,1),
+#      xlab = "Time (Hours)", ylab = "")
 
-usr_fail <- which(num_fail_usr > 0)
+# Status:
+print(paste0("The number of response time is ", sum(Dat[,4]),"."))
+print(paste0("The number of censoring time is ", nrow(Dat) - sum(Dat[,4]),"."))
 
-setwd("../")
-save(sur_collect,file="Reponse_time_collection.RData")
+
+# covariate 1: Weekend effect
+print(paste0("The number of emails sent on weekends is ", sum(Dat[,6]),"."))
+print(paste0("The number of emails sent on weekdays is ", nrow(Dat) - sum(Dat[,6]),"."))
+
+# covariate 2: Forwarding emails
+print(paste0("The number of forwarding emails is ", sum(Dat[,7]),"."))
+print(paste0("The number of non-forwarding emails is ", nrow(Dat) - sum(Dat[,7]),"."))
+
+# covariate 3: Log-scale recevier number
+print(paste0("The mean of log-scale reivecer numbers is ", mean(Dat[,8]),"."))
+print(paste0("The standard deviation of log-scale reivecer numbers is ", sd(Dat[,8]),"."))
+
+# covariate 4: Log-scale word count
+print(paste0("The mean of log-scale word counts is ", mean(Dat[,9]),"."))
+print(paste0("The standard deviation of log-scale word counts is ", sd(Dat[,9]),"."))
 
 ######################################################################
 # Generate the adjacent matrix of the undirected communication graph #
@@ -1097,6 +1257,59 @@ for(i in 1:n_pairs){
 dat_numpair_adj <- data.frame(Sender = com_pairs[1,],
                               Receiver = com_pairs[2,])
 
-write.table(adj_matrix, file = "adj_enron_communications.txt", row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE)
+write.table(adj_matrix, file = "Data/adj_enron_communications.txt", row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE)
+
+#####################################
+# draw heatmap after ordering users #
+#####################################
+library(igraph)
+emp.list <- employees[usr_no_list,]
+
+# order positions for coloring
+emp.list$status_lab <- factor(emp.list$status, levels = c("CEO", "President","Trader","Vice President",
+                                                          "Managing Director","Director","Manager",
+                                                          "In House Lawyer","Employee","N/A"))
+
+# match the eid after exclude a user
+emp.list$eid <- 1:N
+
+num.pair[,1:2] <- factor(num.pair[,1:2], levels = usr_no_list)
+g <- graph_from_data_frame(d=num.pair, vertices=emp.list, directed=TRUE)
+
+
+
+mem <- cluster_walktrap(g)
+
+# order by cluster size
+re_order_vertice <- NULL
+mem_index <- membership(mem)
+cluster_size <- table(mem_index)
+cluster_order <- names(sort(cluster_size))
+
+for(cl in 1:length(cluster_size)){
+  re_order_vertice <- c(re_order_vertice, which(mem_index == cluster_order[cl]))
+}
+
+# draw the adjacent matrix
+dat_numpair <- data.frame(Sender = factor(num.pair[,1],levels = re_order_vertice),
+                          Receiver = factor(num.pair[,2], levels = re_order_vertice),
+                          Weights = num.pair[,3])
+
+
+if(!dir.exists("Images")){
+  dir.create("Images")
+}
+jpeg(filename = paste0("Images/Adjacent_matrix_enron_grey_v8.jpg"),width = 600, height = 600, quality = 100)
+p_grey <- ggplot(dat_numpair, aes(x = Sender, y = Receiver)) +
+  geom_tile() +
+  scale_x_discrete(drop = F) + 
+  scale_y_discrete(drop = F) +
+  # scale_fill_gradient(low="yellow", high="red", limits = c(0,7)) + 
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        text = element_text(size=32),
+        axis.ticks = element_blank())
+p_grey
+dev.off()
 
 
