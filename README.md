@@ -25,7 +25,7 @@ cd ../simulation/
 R --vanilla --slave < simulate_SMMB.R
 ```
 
-It will generate a 150-actor network with time-to-event data between pairs of users. The observed data, including survival times, censoring indicators and covariates, will be stored as the `Dat` variable in the workspace `ObsData/Obs_SMMSB_v1.RData`, while the whole workspace with the true values of parameters will be saved in the workspace `ObsData/workspace_SMMSB_v1.RData` to verify the inference results. The adjacent matrix of the synthetic network is drawn as `Images/Adjacent_matrix_grey_v1.jpg` as Figure 1(b) in the main text.
+It will generate a 150-actor network with time-to-event data between pairs of users. The observed data, including survival times, censoring indicators and covariates, will be stored as the `Dat` variable in the workspace `ObsData/Obs_SMMSB_v1.RData`, while the whole workspace with the true values of parameters will be saved in the workspace `ObsData/workspace_SMMSB_v1.RData` to verify the inference results. The adjacent matrix of the synthetic network is drawn as `Images/Adjacent_matrix_grey_v1.jpg`.
 
 3. To reproduce the statistical inference in our manuscript, please run
 
@@ -151,13 +151,13 @@ difftime(end_time, start_time, units = "mins")
 
 ### Reproduce Figures 1 and 2
 
-In Figure 1, we draw the coverage probablility of 95% credible intervals for each parameter in 100 replicated datasets. We provide the cached workspace `RecoveryResults.Rdata` containing the converage probabilities of parameters for 12 different settings, so Figure 1 can be reproduced by running
+In `Figure 1`, we draw the coverage probablility of 95% credible intervals for each parameter in 100 replicated datasets. We provide the cached workspace `RecoveryResults.Rdata` containing the converage probabilities of parameters for 12 different settings, so Figure 1 can be reproduced by running
 
 ```shell
 R --vanilla --slave < RecoveryPerformance.R
 ```
 
-Similarly, we store the running time of the first replication under different settings in `RunningTime.Rdata`. To reproduce Figure 2, please run
+Similarly, we store the running time of the first replication under different settings in `RunningTime.Rdata`. To reproduce `Figure 2`, please run
 
 ```shell
 R --vanilla --slave < Scalability.R
